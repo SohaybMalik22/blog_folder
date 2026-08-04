@@ -1,0 +1,273 @@
+@import "tailwindcss";
+
+@theme {
+  --color-paper: #f5f2ea;
+  --color-card: #fffdf8;
+  --color-ink: #15150f;
+  --color-muted: #6e6e62;
+  --color-forest: #1b3a2d;
+  --color-forest-deep: #12291f;
+  --color-forest-line: #2f5544;
+  --color-vermillion: #c43c2e;
+  --color-rule: #dcd7c9;
+
+  --font-display: var(--font-playfair), Georgia, serif;
+  --font-body: var(--font-source-serif), Georgia, serif;
+  --font-ui: var(--font-inter), system-ui, sans-serif;
+}
+
+/* The design is committed to a single printed-paper look, so it does not
+   invert for prefers-color-scheme: dark. */
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  font-size: 1.0625rem;
+  line-height: 1.7;
+}
+
+::selection {
+  background: var(--color-vermillion);
+  color: #fff;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-vermillion);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---------- Shared editorial primitives ---------- */
+
+/* Letterspaced caps used for eyebrows, nav, meta and column headers. */
+.label {
+  font-family: var(--font-ui);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.6875rem;
+  font-weight: 600;
+}
+
+.label-sm {
+  font-family: var(--font-ui);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.625rem;
+  font-weight: 600;
+}
+
+/* Solid category chip sitting on top of card artwork. */
+.tag {
+  font-family: var(--font-ui);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  padding: 0.3rem 0.5rem;
+  color: #fff;
+  background: var(--color-vermillion);
+}
+
+.tag--forest {
+  background: var(--color-forest);
+}
+
+/* Section header: rule spanning the row with the title sitting on the left. */
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1.5rem;
+  border-top: 2px solid var(--color-ink);
+  padding-top: 0.75rem;
+  margin-bottom: 1.75rem;
+}
+
+.headline {
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.015em;
+}
+
+/* Card titles are set in caps to separate the index pages from the
+   sentence-case hero and article headlines. */
+.headline-caps {
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+}
+
+.rule {
+  border: 0;
+  border-top: 1px solid var(--color-rule);
+}
+
+/* Grid artwork is desaturated so the vermillion chips stay the only colour
+   accent on index pages. */
+.plate {
+  filter: grayscale(1) contrast(1.05);
+  transition: filter 0.4s ease;
+}
+
+a:hover .plate,
+.group:hover .plate {
+  filter: grayscale(0) contrast(1);
+}
+
+.pill {
+  font-family: var(--font-ui);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.625rem;
+  font-weight: 600;
+  padding: 0.6rem 1.1rem;
+  border: 1px solid var(--color-rule);
+  color: var(--color-ink);
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.pill:hover {
+  background: var(--color-ink);
+  border-color: var(--color-ink);
+  color: var(--color-paper);
+}
+
+.pill--active {
+  background: var(--color-forest);
+  border-color: var(--color-forest);
+  color: #fff;
+}
+
+.btn-primary {
+  font-family: var(--font-ui);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  background: var(--color-vermillion);
+  color: #fff;
+  padding: 0.85rem 1.4rem;
+  transition: background 0.2s ease;
+}
+
+.btn-primary:hover {
+  background: #a72f23;
+}
+
+/* Underline-only fields, matching the reference's form treatment. */
+.field {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--color-rule);
+  padding: 0.6rem 0;
+  font-family: var(--font-body);
+  color: var(--color-ink);
+  transition: border-color 0.2s ease;
+}
+
+.field::placeholder {
+  color: #a5a294;
+}
+
+.field:focus {
+  outline: none;
+  border-bottom-color: var(--color-vermillion);
+}
+
+/* ---------- Article body ---------- */
+
+.dispatch p {
+  margin: 0 0 1.35rem;
+}
+
+/* Only the opening container gets a drop cap — the body is rendered in two
+   halves either side of the Match File block, and both would otherwise
+   qualify as "first paragraph". */
+.dispatch--lede > p:first-of-type::first-letter {
+  float: left;
+  font-family: var(--font-display);
+  font-size: 4.25rem;
+  line-height: 0.82;
+  font-weight: 700;
+  margin: 0.16em 0.09em 0 0;
+  color: var(--color-vermillion);
+}
+
+.dispatch h2,
+.dispatch h3 {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  font-size: 1.0625rem;
+  margin: 2.5rem 0 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-rule);
+}
+
+.dispatch h4 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.125rem;
+  margin: 2rem 0 0.75rem;
+}
+
+.dispatch a {
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-decoration-color: var(--color-vermillion);
+  text-underline-offset: 3px;
+}
+
+.dispatch ul,
+.dispatch ol {
+  margin: 0 0 1.35rem 0;
+  padding-left: 1.1rem;
+}
+
+.dispatch li {
+  margin-bottom: 0.6rem;
+}
+
+.dispatch ul li {
+  list-style: none;
+  position: relative;
+}
+
+.dispatch ul li::before {
+  content: "";
+  position: absolute;
+  left: -1.1rem;
+  top: 0.62em;
+  width: 0.4rem;
+  height: 0.4rem;
+  background: var(--color-vermillion);
+}
+
+.dispatch ol li {
+  list-style: decimal;
+}
+
+.dispatch blockquote {
+  margin: 2rem 0;
+  padding-left: 1.25rem;
+  border-left: 3px solid var(--color-vermillion);
+  font-style: italic;
+  color: var(--color-muted);
+}
+
+.dispatch strong {
+  font-weight: 700;
+}

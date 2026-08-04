@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" width="1200" height="675" role="img" aria-label="Cricket Beat plate">
+  <rect width="1200" height="675" fill="#ece8dc"/>
+  <g fill="none" stroke="#1b3a2d" stroke-opacity="0.22">
+    <ellipse cx="600" cy="337" rx="470" ry="250" stroke-width="2"/>
+    <ellipse cx="600" cy="337" rx="330" ry="172" stroke-width="1.5"/>
+    <ellipse cx="600" cy="337" rx="190" ry="96" stroke-width="1"/>
+  </g>
+  <g stroke="#1b3a2d" stroke-opacity="0.5" stroke-width="1" stroke-dasharray="5 7">
+    <line x1="130" y1="337" x2="1070" y2="337"/>
+    <line x1="600" y1="87" x2="600" y2="587"/>
+  </g>
+  <g stroke="#1b3a2d" stroke-width="6" stroke-linecap="round">
+    <line x1="576" y1="286" x2="576" y2="388"/>
+    <line x1="600" y1="286" x2="600" y2="388"/>
+    <line x1="624" y1="286" x2="624" y2="388"/>
+    <line x1="566" y1="283" x2="634" y2="283"/>
+  </g>
+  <circle cx="726" cy="404" r="15" fill="#c43c2e"/>
+</svg>
