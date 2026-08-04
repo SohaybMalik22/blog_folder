@@ -3,6 +3,19 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
+      "env": [
+        "MONGODB_URI",
+        "REVALIDATE_SECRET",
+        "BLOG_BASE_URL",
+        "AUTH_SECRET",
+        "AUTH_URL",
+        "CRON_SECRET",
+        "GEMINI_API_KEY",
+        "PEXELS_API_KEY",
+        "CLOUDINARY_CLOUD_NAME",
+        "CLOUDINARY_API_KEY",
+        "CLOUDINARY_API_SECRET"
+      ],
       "outputs": [".next/**", "!.next/cache/**"]
     },
     "dev": {
