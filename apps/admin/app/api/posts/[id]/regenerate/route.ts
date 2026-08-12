@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { connectToDatabase, PostModel, RawMatchModel } from "@cricket-blog/db";
 import { generateArticle, createCoverImage } from "@cricket-blog/ai";
-import { normalizeTags, type RawMatch } from "@cricket-blog/types";
+import { normalizeTags, sportOf, type RawMatch } from "@cricket-blog/types";
 
 export async function POST(
   request: NextRequest,
@@ -20,12 +20,17 @@ export async function POST(
   const match = (await RawMatchModel.findById(post.matchRef).lean()) as unknown as RawMatch | null;
   if (!match) return NextResponse.json({ error: "source match not found" }, { status: 404 });
 
+  const sport = sportOf(match.sport);
   const article = await generateArticle(match);
   const cover = await createCoverImage(article.imagePrompt, `${article.slug}-${Date.now()}`, {
+    sport,
     format: match.format,
     tags: article.tags,
   });
 
+  // Re-stamped rather than assumed: a post predating the multi-sport schema has
+  // no sport of its own, and its source match is the authority either way.
+  post.sport = sport;
   post.title = article.title;
   post.slug = article.slug;
   post.metaDescription = article.metaDescription;

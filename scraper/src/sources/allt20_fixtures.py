@@ -18,6 +18,7 @@ from src import fetcher
 
 FIXTURES_URL = "https://allt20.asia/fixtures"
 VENUE = "Sharjah Media City, Sharjah, UAE"
+COMPETITION = "Asian Legends League · Season 2"
 
 
 def fetch_recent_matches() -> list[dict]:
@@ -68,8 +69,10 @@ def _parse_card(card, date_label: str) -> dict | None:
     ]
 
     return {
+        "sport": "cricket",
         "sourceUrl": f"{FIXTURES_URL}#{slug}",
         "matchTitle": f"{match_label}: {team1} vs {team2}",
+        "competition": COMPETITION,
         "teams": [team1, team2],
         "venue": VENUE,
         "date": date_label,
@@ -79,5 +82,7 @@ def _parse_card(card, date_label: str) -> dict | None:
             "localTime": time_chip.get_text(strip=True) if time_chip else "",
         },
         "playerPerformances": [],
+        # Cricket results come as per-player scorecards, not a finishing order.
+        "standings": [],
         "sourceImages": images,
     }

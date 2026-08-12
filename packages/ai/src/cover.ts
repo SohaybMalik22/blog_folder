@@ -1,3 +1,4 @@
+import { sportOf, type Sport } from "@cricket-blog/types";
 import { generateCoverImage } from "./gemini";
 import { uploadCoverImage } from "./cloudinary";
 import { buildPhotoQueries, findStockPhoto } from "./pexels";
@@ -27,11 +28,13 @@ export interface CoverImage {
 export async function createCoverImage(
   imagePrompt: string,
   slug: string,
-  options: { format?: string; tags?: string[] } = {}
+  options: { sport?: Sport; format?: string; tags?: string[] } = {}
 ): Promise<CoverImage> {
+  const sport = sportOf(options.sport);
+
   try {
     const photo = await findStockPhoto(
-      buildPhotoQueries(options.format ?? "T20", options.tags ?? [], slug),
+      buildPhotoQueries(sport, options.format ?? "", options.tags ?? [], slug),
       slug
     );
     if (photo) {

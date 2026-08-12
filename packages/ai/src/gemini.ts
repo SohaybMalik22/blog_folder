@@ -1,5 +1,11 @@
 import { GoogleGenAI, Modality, Type } from "@google/genai";
-import type { RawMatch, GeneratedArticle } from "@cricket-blog/types";
+import {
+  hasResults,
+  sportOf,
+  type GeneratedArticle,
+  type RawMatch,
+  type Sport,
+} from "@cricket-blog/types";
 
 const TEXT_MODEL = "gemini-3.5-flash";
 // Image model must be a generateContent-style image model, not an Imagen
@@ -36,73 +42,131 @@ const ARTICLE_SCHEMA = {
   ],
 };
 
+/**
+ * Per-sport wording for the shared prompt skeleton. Without this the model
+ * writes cricket idiom about a motor race ("both sides", "the format") — the
+ * facts stay correct but the prose reads as though nobody watched the sport.
+ */
+const SPORT_BRIEFS: Record<
+  Sport,
+  { role: string; eventNoun: string; previewFocus: string; reportFocus: string; tagHint: string }
+> = {
+  cricket: {
+    role: "a cricket journalist",
+    eventNoun: "match",
+    previewFocus:
+      "the two teams, the venue's typical conditions, and what will decide the contest",
+    reportFocus:
+      "how the innings shaped the result, which individual performances swung it, and what it means for the table",
+    tagHint: "team names, the format, the tournament name",
+  },
+  motorsport: {
+    role: "a Formula 1 journalist",
+    eventNoun: "race",
+    previewFocus:
+      "the championship picture, this circuit's specific demands (overtaking difficulty, tyre wear, weather risk), and the session schedule leading into the race",
+    reportFocus:
+      "the winning drive, the decisive moments in the finishing order, notable retirements, constructor implications, and how the championship shifts",
+    tagHint: "the Grand Prix name, driver names, constructor names, the season",
+  },
+};
+
 function buildPrompt(match: RawMatch): string {
-  // No player performances means the match hasn't been played yet (a fixture,
-  // not a result) — write a preview instead of inventing a result.
-  const isPreview = match.playerPerformances.length === 0;
+  const sport = sportOf(match.sport);
+  const brief = SPORT_BRIEFS[sport];
+
+  // No results of any kind means the event hasn't been contested yet (a fixture,
+  // not a result) — write a preview rather than inventing an outcome.
+  const isPreview = !hasResults(match);
 
   const factsBlock = JSON.stringify(
     {
-      matchTitle: match.matchTitle,
+      eventTitle: match.matchTitle,
+      competition: match.competition,
       teams: match.teams,
       venue: match.venue,
       date: match.date,
       format: match.format,
       scorecard: match.scorecard,
       playerPerformances: match.playerPerformances,
+      standings: match.standings,
     },
-    null,
+    (key, value) =>
+      // Provenance-only bookkeeping that must never surface in the prose.
+      key === "attribution" || key === "referenceUrl" ? undefined : value,
     2
   );
 
-  if (isPreview) {
-    return `You are a cricket journalist writing an ORIGINAL preview article for an UPCOMING
-match. You are given structured fixture facts (not prose from any source, and no result
-exists yet). Write a genuinely new ~400-word preview — never invent a score, winner, or
-any event that hasn't happened. Focus on the teams, context, and what to watch for.
-
-Fixture facts (JSON):
-${factsBlock}
-
-Requirements:
-- title: SEO-friendly, under 70 characters, must read as a preview (not report a result)
-- slug: lowercase, hyphenated, derived from the title
-- metaDescription: under 160 characters
-- tags: 3-6 relevant tags (team names, format, tournament name)
-- bodyMarkdown: ~400 words, Markdown formatted, preview-style (no invented outcome)
-- imageAlt: descriptive alt text for a cover image (accessibility + SEO)
-- imagePrompt: a prompt to hand to an image generator for a cover image depicting this
-  fixture's theme (no text/logos/scoreboards in the image, editorial/photographic style)
-- confidenceScore: 0.0-1.0, your own estimate of how factually grounded this preview is
-  given the input data (low if fixture data was sparse)`;
-  }
-
-  return `You are a cricket journalist writing an ORIGINAL analysis article. You are given
-structured match facts (not prose from any source). Write a genuinely new ~600-word
-article — never copy or lightly reword any external text, because you were not given any.
-
-Match facts (JSON):
-${factsBlock}
-
-Requirements:
+  const shared = `Requirements:
 - title: SEO-friendly, under 70 characters
 - slug: lowercase, hyphenated, derived from the title
 - metaDescription: under 160 characters
-- tags: 3-6 relevant tags (team names, format, player names)
-- bodyMarkdown: ~600 words, Markdown formatted, headings where useful, analysis-driven
-  (not just a play-by-play restating of the scorecard)
+- tags: 3-6 relevant tags (${brief.tagHint})
 - imageAlt: descriptive alt text for a cover image (accessibility + SEO)
 - imagePrompt: a prompt to hand to an image generator for a cover image depicting this
-  match's theme (no text/logos/scoreboards in the image, editorial/photographic style)
+  ${brief.eventNoun}'s theme (no text/logos/scoreboards in the image, editorial/photographic style)`;
+
+  if (isPreview) {
+    return `You are ${brief.role} writing an ORIGINAL preview article for an UPCOMING
+${brief.eventNoun}. You are given structured facts (not prose from any source, and no
+result exists yet). Write a genuinely new ~400-word preview — never invent a score,
+winner, finishing position, or any event that has not happened. Focus on
+${brief.previewFocus}.
+
+Facts (JSON):
+${factsBlock}
+
+${shared}
+- bodyMarkdown: ~400 words, Markdown formatted, preview-style (no invented outcome).
+  The title must read as a preview, not as a result.
+- confidenceScore: 0.0-1.0, your own estimate of how factually grounded this preview is
+  given the input data (low if the data was sparse)`;
+  }
+
+  return `You are ${brief.role} writing an ORIGINAL analysis article about a ${brief.eventNoun}
+that has been contested. You are given structured facts (not prose from any source).
+Write a genuinely new ~600-word article — never copy or lightly reword any external
+text, because you were not given any. Every name, position, time and number you cite
+must come from the facts below; do not add any you were not given.
+Focus on ${brief.reportFocus}.
+
+Facts (JSON):
+${factsBlock}
+
+${shared}
+- bodyMarkdown: ~600 words, Markdown formatted, headings where useful, analysis-driven
+  (not a position-by-position restatement of the results table)
 - confidenceScore: 0.0-1.0, your own estimate of how factually grounded and complete this
-  article is given the input data (low if scorecard data was sparse or ambiguous)`;
+  article is given the input data (low if the data was sparse or ambiguous)`;
+}
+
+/**
+ * Coerce whatever scale the model answered on into 0-1.
+ *
+ * Percentages (85) and 0-10 scores (9.2) both appear in practice. Anything
+ * unparseable becomes 0, which routes the post to manual review rather than
+ * auto-publishing it on a score we don't trust.
+ */
+export function normalizeConfidence(raw: unknown): number {
+  const value = Number(raw);
+  if (!Number.isFinite(value) || value <= 0) return 0;
+  if (value <= 1) return value;
+  if (value <= 10) return value / 10;
+  if (value <= 100) return value / 100;
+  return 1;
 }
 
 const MAX_ATTEMPTS = 4;
 
 // 429 (rate limited) and 503 (model overloaded) are routinely transient on the
 // free tier, so retry those with backoff instead of dropping the match.
+//
+// A SyntaxError from JSON.parse belongs here too: despite the response schema,
+// the model occasionally degenerates into repetition and returns a megabyte of
+// unterminated JSON. That's a bad roll of the dice, not a bad prompt, and a
+// retry produces valid output.
 function isTransient(err: unknown): boolean {
+  if (err instanceof SyntaxError) return true;
   const message = (err as Error)?.message ?? "";
   return message.includes("429") || message.includes("503");
 }
@@ -143,6 +207,12 @@ export async function generateArticle(match: RawMatch): Promise<GeneratedArticle
     // real newlines, which leaves the Markdown unparseable (headings and
     // paragraph breaks render as raw text).
     article.bodyMarkdown = article.bodyMarkdown.replace(/\\n/g, "\n");
+
+    // The prompt asks for 0.0-1.0 but the model sometimes answers on a 0-10 or
+    // percentage scale, and the Post schema rejects anything above 1 — which
+    // threw away an otherwise good article. Rescale the obvious cases, clamp the
+    // rest, since the score only gates auto-publish and is not itself content.
+    article.confidenceScore = normalizeConfidence(article.confidenceScore);
 
     return article;
   });

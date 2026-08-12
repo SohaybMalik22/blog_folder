@@ -14,6 +14,21 @@ def get_db():
     return _client.get_default_database()
 
 
+def backfill_missing_sport(sport: str) -> int:
+    """Stamp `sport` on documents written before the pipeline was multi-sport.
+
+    Cheap and idempotent: after the first run the filter matches nothing.
+    """
+    db = get_db()
+    result = db.raw_matches.update_many(
+        {"sport": {"$exists": False}}, {"$set": {"sport": sport}}
+    )
+    posts = db.posts.update_many(
+        {"sport": {"$exists": False}}, {"$set": {"sport": sport}}
+    )
+    return result.modified_count + posts.modified_count
+
+
 def save_raw_match(match: dict) -> str:
     """Upsert by sourceUrl so re-running the scraper never creates duplicates.
 

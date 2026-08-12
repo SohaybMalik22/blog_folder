@@ -1,3 +1,5 @@
+import type { Sport } from "@cricket-blog/types";
+
 export interface StockPhoto {
   url: string;
   alt: string;
@@ -9,20 +11,38 @@ const SEARCH_URL = "https://api.pexels.com/v1/search";
 const RESULTS_PER_QUERY = 20;
 
 /**
- * Scene-diverse queries. Team names are useless here — Pexels has no photography
- * of this particular league — so the variety has to come from the kind of
- * cricket moment depicted instead.
+ * Scene-diverse queries per sport. Competitor names are useless here — Pexels
+ * has no photography of this particular league, and none of a named driver — so
+ * the variety has to come from the kind of moment depicted instead.
  */
-const SCENE_QUERIES = [
-  "cricket batsman batting",
-  "cricket bowler bowling",
-  "cricket stadium floodlights",
-  "cricket match crowd",
-  "cricket fielding catch",
-  "cricket pitch wicket",
-  "cricket player action",
-  "cricket ground aerial",
-];
+const SCENE_QUERIES: Record<Sport, string[]> = {
+  cricket: [
+    "cricket batsman batting",
+    "cricket bowler bowling",
+    "cricket stadium floodlights",
+    "cricket match crowd",
+    "cricket fielding catch",
+    "cricket pitch wicket",
+    "cricket player action",
+    "cricket ground aerial",
+  ],
+  motorsport: [
+    "formula 1 car racing",
+    "race car cornering circuit",
+    "motorsport pit lane",
+    "racing car speed blur",
+    "formula racing grandstand crowd",
+    "race track aerial circuit",
+    "pit stop tyre change",
+    "racing helmet driver cockpit",
+  ],
+};
+
+/** Broad final fallbacks, tried after the sport-specific scenes. */
+const GENERIC_QUERIES: Record<Sport, string[]> = {
+  cricket: ["cricket"],
+  motorsport: ["motorsport racing", "race car"],
+};
 
 /** Stable non-crypto hash so a given slug always resolves to the same photo. */
 function seedFrom(value: string): number {
@@ -92,18 +112,29 @@ export async function findStockPhoto(
   return null;
 }
 
+/** Place tags worth trying as a literal query, since Pexels does have
+ *  photography of well-known venues and cities. */
+const PLACE_TAG = /sharjah|dubai|lusaka|stadium|monaco|silverstone|monza|circuit|grand prix/i;
+
 /**
  * Ordered query list for one post: a seed-chosen scene first so covers vary
  * between posts, then progressively broader fallbacks.
  */
-export function buildPhotoQueries(format: string, tags: string[], seed = ""): string[] {
-  const primary = SCENE_QUERIES[seedFrom(seed) % SCENE_QUERIES.length];
-  const venueTag = tags.find((tag) => /sharjah|dubai|lusaka|stadium/i.test(tag));
+export function buildPhotoQueries(
+  sport: Sport,
+  format: string,
+  tags: string[],
+  seed = ""
+): string[] {
+  const scenes = SCENE_QUERIES[sport];
+  const primary = scenes[seedFrom(seed) % scenes.length];
+  const subject = sport === "motorsport" ? "formula 1" : "cricket";
+  const placeTag = tags.find((tag) => PLACE_TAG.test(tag));
 
   return [
     primary,
-    ...(venueTag ? [`cricket ${venueTag}`] : []),
-    `cricket ${format}`,
-    "cricket",
+    ...(placeTag ? [`${subject} ${placeTag}`] : []),
+    `${subject} ${format}`,
+    ...GENERIC_QUERIES[sport],
   ];
 }

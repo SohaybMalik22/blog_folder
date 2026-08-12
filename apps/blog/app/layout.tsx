@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { Playfair_Display, Source_Serif_4, Inter } from "next/font/google";
 import { SiteHeader } from "./components/site-header";
 import { SiteFooter } from "./components/site-footer";
-import { getTagIndex } from "@/lib/posts";
+import { getSportCounts, getTagIndex } from "@/lib/posts";
+import { SITE_NAME, SITE_TAGLINE } from "@/lib/site";
 import "./globals.css";
 
 const playfair = Playfair_Display({
@@ -24,15 +25,16 @@ const inter = Inter({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.BLOG_BASE_URL ?? "http://localhost:3000"),
   title: {
-    default: "Cricket Beat — Asian Legends League analysis",
-    template: "%s | Cricket Beat",
+    default: `${SITE_NAME} — Formula 1 and cricket analysis`,
+    template: `%s | ${SITE_NAME}`,
   },
-  description:
-    "Match previews and analysis for the Asian Legends League, written from the fixture record.",
+  description: SITE_TAGLINE,
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const tags = await getTagIndex();
+  // Both the masthead and footer hide sports with nothing published, so the
+  // counts are fetched once here rather than in each component.
+  const [tags, counts] = await Promise.all([getTagIndex(), getSportCounts()]);
 
   return (
     <html
@@ -40,9 +42,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       className={`${playfair.variable} ${sourceSerif.variable} ${inter.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
-        <SiteHeader />
+        <SiteHeader counts={counts} />
         <div className="flex-1">{children}</div>
-        <SiteFooter tags={tags} />
+        <SiteFooter tags={tags} counts={counts} />
       </body>
     </html>
   );

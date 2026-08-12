@@ -9,7 +9,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Cricket Beat Admin",
+  title: "Sporting Beat Admin",
   description: "Review, edit and publish generated cricket dispatches",
 };
 

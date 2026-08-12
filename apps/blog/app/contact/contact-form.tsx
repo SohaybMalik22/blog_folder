@@ -14,7 +14,7 @@ export function ContactForm() {
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const subject = encodeURIComponent(`Cricket Beat enquiry from ${name}`);
+    const subject = encodeURIComponent(`Sporting Beat enquiry from ${name}`);
     const body = encodeURIComponent(`${message}\n\n— ${name} (${email})`);
     window.location.href = `mailto:${DESK_EMAIL}?subject=${subject}&body=${body}`;
   }

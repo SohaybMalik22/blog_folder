@@ -13,4 +13,4 @@ CRON_SECRET = os.environ.get("CRON_SECRET")
 
 REQUEST_TIMEOUT_SECONDS = 15
 DELAY_BETWEEN_REQUESTS_SECONDS = 1.5
-USER_AGENT = "Mozilla/5.0 (compatible; CricketBlogBot/1.0; +for personal research project)"
+USER_AGENT = "Mozilla/5.0 (compatible; SportsBlogBot/1.0; +for personal research project)"

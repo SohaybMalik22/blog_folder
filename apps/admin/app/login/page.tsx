@@ -34,7 +34,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="mb-6 text-center">
-          <p className="text-base font-bold text-ink">Cricket Beat</p>
+          <p className="text-base font-bold text-ink">Sporting Beat</p>
           <p className="eyebrow mt-1">Admin console</p>
         </div>
 

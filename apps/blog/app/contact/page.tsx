@@ -5,7 +5,7 @@ import { DESK_EMAIL } from "../components/insider-panel";
 
 export const metadata: Metadata = {
   title: "Get in touch",
-  description: "Contact the Cricket Beat desk about coverage, corrections or partnerships.",
+  description: "Contact the Sporting Beat desk about coverage, corrections or partnerships.",
 };
 
 export default function ContactPage() {
@@ -21,7 +21,7 @@ export default function ContactPage() {
       <div className="relative mt-10 aspect-[16/7] overflow-hidden">
         <Image
           src="/placeholder-cover.svg"
-          alt="Cricket Beat editorial desk"
+          alt="Sporting Beat editorial desk"
           fill
           sizes="(max-width: 768px) 100vw, 672px"
           className="plate object-cover"

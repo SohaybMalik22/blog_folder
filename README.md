@@ -1,13 +1,31 @@
-# Cricket Blog
+# Sporting Beat
 
-AI-automated cricket blog. A Python scraper collects raw match facts, Gemini turns
-them into original articles + cover images, an admin app reviews/publishes them,
-and a Next.js blog serves the published posts with SSG/ISR.
+AI-automated sports blog, currently covering **Formula 1** and **cricket**. A
+Python scraper collects raw event facts, Gemini turns them into original articles
++ cover images, an admin app reviews/publishes them, and a Next.js blog serves
+the published posts with SSG/ISR.
+
+Adding a sport means four things, and skipping any of them produces
+sport-blind output rather than an error:
+
+1. an adapter in `scraper/src/sources/` that returns `sport: "<name>"`
+2. the value added to `Sport` in `packages/types`, the `sport` enums in
+   `packages/db/src/models/`, and `VALID_SPORTS`/`VALID_FORMATS` in
+   `scraper/src/items.py`
+3. a `SPORT_BRIEFS` entry in `packages/ai/src/gemini.ts` (prompt voice) and a
+   `SCENE_QUERIES` entry in `packages/ai/src/pexels.ts` (cover imagery)
+4. a `SPORT_META` entry in `apps/blog/lib/site.ts` (labels, URL slug, blurb,
+   data credit)
+
+Head-to-head sports fill `teams` with exactly two names. Field sports (a race
+grid) leave `teams` empty and put the finishing order in `standings` instead —
+`hasResults()` in `packages/types` is what decides preview vs report, not the
+presence of `playerPerformances`.
 
 ## Structure
 
 ```
-apps/admin   - review/edit/approve dashboard (Auth.js login), port 3001
+apps/admin   - review/edit/approve dashboard (Auth.js login), port 3011
 apps/blog    - public blog, SSG + on-demand revalidation, port 3000
 packages/db  - Mongoose connection + schemas (raw_matches, posts, admin_users)
 packages/types - shared TypeScript types
@@ -30,8 +48,14 @@ Fill in the missing Cloudinary values in `apps/admin/.env.local` and
 ## Running locally
 
 ```bash
-pnpm dev   # runs both apps via turbo (admin on :3001, blog on :3000)
+pnpm dev   # runs both apps via turbo (blog on :3000, admin on :3011)
 ```
+
+The admin port is 3011 rather than 3001 because a sibling project on this
+machine holds 3001 and 3002. Three places must agree if you change it:
+`apps/admin/package.json` (`dev` script), `AUTH_URL` in
+`apps/admin/.env.local`, and `ADMIN_BASE_URL` in `scraper/.env`. A stale
+`AUTH_URL` doesn't fail loudly — login just redirects to a dead port.
 
 Scraper (separate, Python):
 
@@ -42,15 +66,41 @@ pip install -r requirements.txt
 python main.py
 ```
 
-### Data source
+### Data sources
 
-The active adapter is `scraper/src/sources/allt20_fixtures.py`, scraping
+**Formula 1 — `scraper/src/sources/f1_races.py`** (the productive source).
+Reads the [Jolpica](https://api.jolpi.ca/ergast/f1) JSON API, the maintained
+successor to Ergast: a JSON contract rather than HTML, so nothing breaks when
+the site is restyled. One race becomes one `raw_matches` document; completed
+rounds carry the full classification (position, driver, constructor, finishing
+time or retirement reason, points) so Gemini writes reports rather than
+speculation.
+
+Its `robots.txt` sets `Allow: /` for the wildcard agent alongside
+`Content-Signal: search=yes,ai-train=no`. We honour `ai-train=no` — race facts
+are reference input for original prose, never training data. The licence asks
+for attribution, which is rendered on every race article and in the footer via
+`SPORT_META.motorsport.dataCredit`, not merely stored. **Check the upstream
+terms before running ads against this content**: factual results aren't
+copyrightable, but Ergast-lineage data has carried non-commercial expectations.
+
+Two API quirks the adapter handles: `limit` is capped at 100 regardless of what
+you ask for (so a season's ~480 result rows need paging, and a single race can
+straddle a page boundary), and championship standings are only quoted for the
+*upcoming* race — printing today's table inside a report on round 3 would be an
+anachronism.
+
+**Cricket — `scraper/src/sources/allt20_fixtures.py`**, scraping
 https://allt20.asia/fixtures (Asian Legends League Season 2). That site's
 robots.txt allows all bots and its pages are server-rendered HTML.
 
-Its `/results` page has no completed matches yet, so only upcoming fixtures
-exist — no scorecards or player stats. When `playerPerformances` is empty the
-Gemini prompt switches to preview mode so it never invents a result.
+Its `/results` page still says "No results yet" even though the published
+schedule (30 Jul – 10 Aug 2026) has passed and every fixture is still flagged
+`upcoming`, so only fixtures exist — no scorecards or player stats. All 15
+cricket dispatches are therefore previews. The tournament also lists 21
+fixtures, but 6 of those are ceremonies and playoff slots whose teams are still
+`—`; the adapter skips them deliberately (`len(teams) < 2`) rather than letting
+Gemini preview "Rank 1 vs Rank 2".
 
 `example_source.py` is an unfilled template kept as a starting point for adding
 another source. Note that ESPN Cricinfo (403s all automated requests via its
@@ -69,7 +119,9 @@ and concurrency handling are the hard parts to reimplement.
 1. Scraper seeds `raw_matches` (status: `new`) in MongoDB.
 2. It (or a manual `curl`) triggers `POST /api/generate` on the admin app with
    header `x-cron-secret: $CRON_SECRET` — this runs Gemini text + image
-   generation and writes `posts`.
+   generation and writes `posts`. One call handles `BATCH_SIZE` (5) events, and
+   **contested events are selected first** so a rate-limited free-tier batch is
+   spent on reports rather than speculative previews.
 3. Posts scoring `>= AUTO_PUBLISH_THRESHOLD` (0.85, see `apps/admin/lib/publish.ts`)
    auto-publish; everything else lands in the admin dashboard as `pending` for
    manual review (edit / approve / reject / regenerate).
@@ -88,12 +140,33 @@ and concurrency handling are the hard parts to reimplement.
    Cloudinary values (`CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_SECRET`).
 3. **`/placeholder-cover.svg`** in each app's `public/`.
 
+Cover scenes are chosen per sport (`SCENE_QUERIES` in `pexels.ts`) — Pexels has
+no photography of this league or of a named driver, so the variety comes from
+the kind of moment depicted. A missing entry silently yields cricket photos on
+an F1 article.
+
 Images from the scraped source site are **never** used as covers. The scraper
 records their URLs in `raw_matches.sourceImages` as provenance only — they are
 the tournament's copyrighted photography and its logos are also trademarks, and
 editing them would produce a derivative work rather than avoid the rights issue.
 That is the same reason the pipeline generates prose from facts instead of
 rewriting source articles.
+
+### Gemini output quirks
+
+Two failure modes cost whole articles before they were handled, both in
+`packages/ai/src/gemini.ts`:
+
+- **`confidenceScore` ignores the requested scale.** The prompt asks for 0.0-1.0
+  and the model has returned `1.9`, which the `Post` schema rejects outright
+  (`max: 1`) — the article was generated, then thrown away. `normalizeConfidence`
+  rescales the obvious 0-10 / percentage cases and clamps the rest; anything
+  unparseable becomes 0, routing the post to manual review rather than
+  auto-publishing on a score we don't trust.
+- **Occasional runaway JSON.** Despite the response schema, the model sometimes
+  degenerates into repetition and returns ~1.4 MB of unterminated JSON. A
+  `SyntaxError` from `JSON.parse` is therefore treated as transient and retried
+  alongside 429/503.
 
 Model names are pinned in `packages/ai/src/gemini.ts`. Google retires models
 for new API keys fairly aggressively — `gemini-2.5-flash` and

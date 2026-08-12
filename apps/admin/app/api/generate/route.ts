@@ -1,13 +1,58 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase, RawMatchModel, PostModel } from "@cricket-blog/db";
 import { generateArticle, createCoverImage } from "@cricket-blog/ai";
-import { normalizeTags, type RawMatch } from "@cricket-blog/types";
+import { normalizeTags, sportOf, type RawMatch } from "@cricket-blog/types";
 import { AUTO_PUBLISH_THRESHOLD, notifyBlogToRevalidate } from "@/lib/publish";
 
 const BATCH_SIZE = 5;
 // Gemini free tier has a per-minute request cap — space out generations
 // within a batch instead of firing them concurrently.
 const DELAY_BETWEEN_MATCHES_MS = 4000;
+
+// Events that have actually been contested carry real results, so they yield
+// reports rather than speculative previews. On a rate-limited free tier the
+// batch is the scarce resource, so spend it on those first.
+const CONTESTED = {
+  $or: [{ "standings.0": { $exists: true } }, { "playerPerformances.0": { $exists: true } }],
+};
+
+// A preview written months out says nothing a reader can use and nothing Google
+// will rank — a 23-round season would otherwise yield 22 speculative pieces the
+// day it's scraped. Events past this horizon stay `new` until they're closer, at
+// which point they're either previewable or already contested.
+const PREVIEW_HORIZON_DAYS = 21;
+
+/** The scraped `date` is a display string, and its format differs per source
+ *  ("2026-08-23" from the F1 API, "30 JUL 2026" from the cricket scrape). Both
+ *  are Date-parseable; anything that isn't is treated as out of range rather
+ *  than silently previewed. */
+function isWithinPreviewHorizon(match: RawMatch, now: number): boolean {
+  const eventTime = Date.parse(String(match.date));
+  if (Number.isNaN(eventTime)) return false;
+  return eventTime - now <= PREVIEW_HORIZON_DAYS * 24 * 60 * 60 * 1000;
+}
+
+async function selectBatch(): Promise<RawMatch[]> {
+  const contested = (await RawMatchModel.find({ status: "new", ...CONTESTED })
+    .limit(BATCH_SIZE)
+    .lean()) as unknown as RawMatch[];
+
+  if (contested.length >= BATCH_SIZE) return contested;
+
+  // Fetched unfiltered because the horizon check can't be expressed against a
+  // display-string date in the query itself.
+  const candidates = (await RawMatchModel.find({
+    status: "new",
+    $nor: [CONTESTED],
+  }).lean()) as unknown as RawMatch[];
+
+  const now = Date.now();
+  const upcoming = candidates
+    .filter((match) => isWithinPreviewHorizon(match, now))
+    .slice(0, BATCH_SIZE - contested.length);
+
+  return [...contested, ...upcoming];
+}
 
 export async function POST(request: NextRequest) {
   const secret = request.headers.get("x-cron-secret");
@@ -16,16 +61,16 @@ export async function POST(request: NextRequest) {
   }
 
   await connectToDatabase();
-  const rawMatches = (await RawMatchModel.find({ status: "new" })
-    .limit(BATCH_SIZE)
-    .lean()) as unknown as RawMatch[];
+  const rawMatches = await selectBatch();
 
   const results: Array<{ matchId: string; postId?: string; status?: string; error?: string }> = [];
 
   for (const match of rawMatches) {
     try {
+      const sport = sportOf(match.sport);
       const article = await generateArticle(match);
       const cover = await createCoverImage(article.imagePrompt, article.slug, {
+        sport,
         format: match.format,
         tags: article.tags,
       });
@@ -34,6 +79,7 @@ export async function POST(request: NextRequest) {
 
       const post = await PostModel.create({
         matchRef: match._id,
+        sport,
         title: article.title,
         slug: article.slug,
         metaDescription: article.metaDescription,

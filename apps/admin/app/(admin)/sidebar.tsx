@@ -34,7 +34,7 @@ export function Sidebar({ fixturesWaiting }: { fixturesWaiting: number }) {
   return (
     <aside className="flex w-56 shrink-0 flex-col border-r border-line bg-surface">
       <div className="flex items-baseline gap-2 px-4 py-4">
-        <span className="text-sm font-bold text-ink">Cricket Beat</span>
+        <span className="text-sm font-bold text-ink">Sporting Beat</span>
         <span className="text-[0.625rem] text-ink-faint">Admin</span>
       </div>
 

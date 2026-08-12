@@ -10,7 +10,8 @@ import {
 } from "@/lib/posts";
 import { renderMarkdown } from "@/lib/markdown";
 import { BYLINE, categoryOf, formatDateline, readTime } from "@/lib/format";
-import { MatchFile } from "../../components/match-file";
+import { SITE_NAME, SPORT_META, sportHref } from "@/lib/site";
+import { EventFile } from "../../components/event-file";
 import { PostCard } from "../../components/post-card";
 
 export const revalidate = 3600;
@@ -83,8 +84,14 @@ export default async function PostPage({
   const html = renderMarkdown(post.bodyMarkdown);
   const [bodyStart, bodyRest] = match ? splitAtSecondHeading(html) : [html, ""];
 
+  // Same sport first: a cricket preview under an F1 race report reads as an
+  // unrelated site. Other sports only backfill when this one is thin.
+  const others = allPosts.filter((p) => p.slug !== post.slug);
   const related = await withFixtures(
-    allPosts.filter((p) => p.slug !== post.slug).slice(0, 3)
+    [
+      ...others.filter((p) => p.sport === post.sport),
+      ...others.filter((p) => p.sport !== post.sport),
+    ].slice(0, 3)
   );
   const shareUrl = `${process.env.BLOG_BASE_URL ?? "http://localhost:3000"}/posts/${post.slug}`;
 
@@ -96,9 +103,11 @@ export default async function PostPage({
     image: [post.imageUrl],
     datePublished: post.publishedAt,
     dateModified: post.publishedAt,
-    author: { "@type": "Organization", name: "Cricket Beat" },
-    publisher: { "@type": "Organization", name: "Cricket Beat" },
+    author: { "@type": "Organization", name: SITE_NAME },
+    publisher: { "@type": "Organization", name: SITE_NAME },
   };
+
+  const sportMeta = SPORT_META[post.sport];
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
@@ -110,8 +119,10 @@ export default async function PostPage({
       <article className="mx-auto max-w-2xl">
         <header className="text-center">
           <p className="label text-vermillion">
-            {categoryOf(post.tags)}
-            {match ? ` · ${match.format}` : ""}
+            <Link href={sportHref(post.sport)} className="hover:underline">
+              {sportMeta.label}
+            </Link>
+            {` · ${categoryOf(post.tags)}`}
           </p>
           <h1 className="headline mt-4 text-3xl sm:text-4xl md:text-[2.6rem]">{post.title}</h1>
           <p className="label-sm mt-5 text-muted">
@@ -157,7 +168,7 @@ export default async function PostPage({
           dangerouslySetInnerHTML={{ __html: bodyStart }}
         />
 
-        {match && <MatchFile match={match} />}
+        {match && <EventFile match={match} />}
 
         {bodyRest && <div className="dispatch" dangerouslySetInnerHTML={{ __html: bodyRest }} />}
 

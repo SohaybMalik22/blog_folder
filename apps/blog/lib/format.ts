@@ -19,9 +19,9 @@ export function readTime(markdown: string): string {
 }
 
 // Tags mix content types ("Match Preview"), formats ("T20 Cricket") and proper
-// nouns (team names, venues). For the category chip we want the type or format,
-// never a team name — so those are matched first and everything else falls back
-// to the first tag.
+// nouns (team names, drivers, constructors, venues). For the category chip we
+// want the type or format, never a competitor name — so those are matched first
+// and everything else falls back to the first tag.
 const CATEGORY_PATTERNS = [
   /preview/i,
   /analysis/i,
@@ -29,6 +29,9 @@ const CATEGORY_PATTERNS = [
   /\bt20\b/i,
   /\bodi\b/i,
   /\btest\b/i,
+  /grand prix/i,
+  /\bf1\b|formula 1/i,
+  /championship/i,
 ];
 
 export function categoryOf(tags: string[]): string {

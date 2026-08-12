@@ -1,11 +1,19 @@
 import { connectToDatabase, PostModel, RawMatchModel } from "@cricket-blog/db";
-import { normalizeTags, type Post, type PostStatus } from "@cricket-blog/types";
+import {
+  normalizeTags,
+  sportOf,
+  type Post,
+  type PostStatus,
+  type Sport,
+} from "@cricket-blog/types";
 
 function serialize(post: any): Post {
   return {
     ...post,
     _id: String(post._id),
     matchRef: String(post.matchRef),
+    // Posts generated before the schema was multi-sport carry no `sport`.
+    sport: sportOf(post.sport),
     generatedAt: post.generatedAt?.toISOString?.() ?? post.generatedAt,
     publishedAt: post.publishedAt ? post.publishedAt.toISOString?.() ?? post.publishedAt : null,
   };
@@ -91,6 +99,7 @@ const PER_PAGE = 10;
 
 export async function getPostsPage(options: {
   status?: string;
+  sport?: string;
   q?: string;
   page?: number;
 }): Promise<PostsPage> {
@@ -99,6 +108,9 @@ export async function getPostsPage(options: {
   const filter: Record<string, unknown> = {};
   if (options.status && options.status !== "all") {
     filter.status = options.status as PostStatus;
+  }
+  if (options.sport && options.sport !== "all") {
+    filter.sport = options.sport as Sport;
   }
   if (options.q?.trim()) {
     // Escaped so a stray regex character in the search box can't throw.
@@ -128,7 +140,9 @@ export async function getPostsPage(options: {
     (matches as any[]).map((m) => [
       String(m._id),
       {
-        label: String(m.matchTitle ?? "").replace(/^match\s+\d+:\s*/i, ""),
+        // Drop the leading "Match 7: " / "Round 11: " — the column is narrow and
+        // the number adds nothing next to the title it already prefixes.
+        label: String(m.matchTitle ?? "").replace(/^(?:match|round)\s+\d+:\s*/i, ""),
         date: typeof m.date === "string" ? m.date : "",
       },
     ])

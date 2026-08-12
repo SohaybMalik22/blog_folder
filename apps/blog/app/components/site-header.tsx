@@ -1,23 +1,26 @@
 import Link from "next/link";
+import type { Sport } from "@cricket-blog/types";
+import { SITE_NAME, SPORT_META, SPORT_ORDER, sportHref } from "@/lib/site";
 
-const NAV = [
-  { href: "/posts", label: "All dispatches" },
-  { href: "/posts?tag=T20+Cricket", label: "T20" },
-  { href: "/posts?tag=Match+Preview", label: "Previews" },
-  { href: "/contact", label: "Contact" },
-];
+/**
+ * Sport sections lead the nav — they're the site's top-level structure now that
+ * more than one sport is covered. `counts` hides a sport that has nothing
+ * published yet, so the nav never links to an empty section.
+ */
+export function SiteHeader({ counts }: { counts: Record<Sport, number> }) {
+  const sports = SPORT_ORDER.filter((sport) => counts[sport] > 0);
 
-export function SiteHeader() {
   return (
     <header className="bg-forest text-paper">
-      {/* Dateline strip: names the competition every dispatch belongs to. */}
+      {/* Dateline strip: names the competitions currently in coverage. */}
       <div className="border-b border-forest-line/60">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-1.5 sm:px-6">
           <span className="label-sm text-paper/55">
-            Asian Legends League · Season 2
+            {sports.map((sport) => SPORT_META[sport].competition).join("  ·  ") ||
+              "Awaiting first dispatch"}
           </span>
           <span className="label-sm hidden text-paper/55 sm:block">
-            Lusaka &amp; Sharjah · T20
+            Written from the official record
           </span>
         </div>
       </div>
@@ -25,7 +28,7 @@ export function SiteHeader() {
       <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-8 gap-y-3 px-4 py-4 sm:px-6">
         <Link href="/" className="shrink-0">
           <span className="font-display text-xl font-bold uppercase tracking-[0.14em] sm:text-2xl">
-            Cricket Beat
+            {SITE_NAME}
           </span>
         </Link>
 
@@ -33,16 +36,32 @@ export function SiteHeader() {
 
         <nav aria-label="Sections">
           <ul className="flex flex-wrap items-center gap-x-6 gap-y-2">
-            {NAV.map((item) => (
-              <li key={item.href}>
+            {sports.map((sport) => (
+              <li key={sport}>
                 <Link
-                  href={item.href}
+                  href={sportHref(sport)}
                   className="label text-paper/80 transition-colors hover:text-white"
                 >
-                  {item.label}
+                  {SPORT_META[sport].label}
                 </Link>
               </li>
             ))}
+            <li>
+              <Link
+                href="/posts"
+                className="label text-paper/80 transition-colors hover:text-white"
+              >
+                All dispatches
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/contact"
+                className="label text-paper/80 transition-colors hover:text-white"
+              >
+                Contact
+              </Link>
+            </li>
           </ul>
         </nav>
 

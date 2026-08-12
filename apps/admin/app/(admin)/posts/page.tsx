@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { normalizeTags } from "@cricket-blog/types";
+import { normalizeTags, SPORTS, SPORT_LABELS } from "@cricket-blog/types";
 import { getPostsPage, POSTS_PER_PAGE } from "@/lib/queries";
 import { shortDate, statusClass } from "@/lib/format";
 
@@ -7,22 +7,30 @@ export const dynamic = "force-dynamic";
 
 const STATUSES = ["all", "pending", "published", "rejected"] as const;
 
+const SPORT_FILTERS = [
+  { value: "all", label: "All sports" },
+  ...SPORTS.map((sport) => ({ value: sport, label: SPORT_LABELS[sport] })),
+];
+
 export default async function PostsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; q?: string; page?: string }>;
+  searchParams: Promise<{ status?: string; sport?: string; q?: string; page?: string }>;
 }) {
-  const { status = "all", q = "", page } = await searchParams;
+  const { status = "all", sport = "all", q = "", page } = await searchParams;
   const { rows, total, page: current, totalPages } = await getPostsPage({
     status,
+    sport,
     q,
     page: Number(page) || 1,
   });
 
-  function href(next: { status?: string; page?: number }) {
+  function href(next: { status?: string; sport?: string; page?: number }) {
     const params = new URLSearchParams();
     const s = next.status ?? status;
+    const sp = next.sport ?? sport;
     if (s && s !== "all") params.set("status", s);
+    if (sp && sp !== "all") params.set("sport", sp);
     if (q) params.set("q", q);
     if (next.page && next.page > 1) params.set("page", String(next.page));
     const qs = params.toString();
@@ -66,6 +74,22 @@ export default async function PostsPage({
             </Link>
           ))}
         </div>
+
+        <div className="flex items-center gap-1.5">
+          {SPORT_FILTERS.map(({ value, label }) => (
+            <Link
+              key={value}
+              href={href({ sport: value, page: 1 })}
+              className={`rounded-md px-2.5 py-1.5 text-[0.75rem] font-semibold transition-colors ${
+                sport === value
+                  ? "bg-brand text-white"
+                  : "border border-line bg-surface text-ink-soft hover:bg-line-soft"
+              }`}
+            >
+              {label}
+            </Link>
+          ))}
+        </div>
       </div>
 
       {/* Table */}
@@ -92,7 +116,8 @@ export default async function PostsPage({
               <thead>
                 <tr>
                   <th>Title</th>
-                  <th>Fixture</th>
+                  <th>Sport</th>
+                  <th>Event</th>
                   <th>Tags</th>
                   <th>Status</th>
                   <th>Confidence</th>
@@ -112,6 +137,9 @@ export default async function PostsPage({
                         >
                           {row.title}
                         </Link>
+                      </td>
+                      <td className="whitespace-nowrap text-ink-soft">
+                        {SPORT_LABELS[row.sport]}
                       </td>
                       <td className="max-w-[14rem] text-ink-soft">
                         <span className="line-clamp-1">{row.fixture?.label ?? "—"}</span>

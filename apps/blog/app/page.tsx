@@ -1,11 +1,18 @@
 import Link from "next/link";
 import Image from "next/image";
-import { getPublishedPosts, getSeasonFixtures, getTagIndex, withFixtures } from "@/lib/posts";
+import {
+  getPublishedPosts,
+  getSeasonFixtures,
+  getTagIndex,
+  isLabelled,
+  withFixtures,
+} from "@/lib/posts";
 import { BYLINE, categoryOf, formatDateline, readTime } from "@/lib/format";
+import { SPORT_META, SPORT_ORDER, sportHref } from "@/lib/site";
 import { PostCard } from "./components/post-card";
 import { InsiderPanel } from "./components/insider-panel";
 import { FixtureList } from "./components/fixture-list";
-import { VersusPlate } from "./components/versus-plate";
+import { CoverPlate } from "./components/cover-plate";
 
 export const revalidate = 3600;
 
@@ -13,7 +20,9 @@ export default async function HomePage() {
   const [posts, tags, fixtures] = await Promise.all([
     getPublishedPosts(),
     getTagIndex(),
-    getSeasonFixtures(6),
+    // The lead sport's schedule: the sidebar has room for one, and the other
+    // sports' calendars live on their own landing pages.
+    getSeasonFixtures(SPORT_ORDER[0], 6),
   ]);
 
   if (posts.length === 0) {
@@ -45,8 +54,8 @@ export default async function HomePage() {
       <section className="grid gap-10 lg:grid-cols-[1.85fr_1fr]">
         <article className="group">
           <Link href={`/posts/${lead.slug}`} className="relative block">
-            {leadEntry.fixture && leadEntry.fixture.teams.length === 2 ? (
-              <VersusPlate post={lead} fixture={leadEntry.fixture} size="lead" priority />
+            {isLabelled(leadEntry.fixture) ? (
+              <CoverPlate post={lead} fixture={leadEntry.fixture} size="lead" priority />
             ) : (
               <div className="relative aspect-video overflow-hidden">
                 <Image
@@ -97,7 +106,9 @@ export default async function HomePage() {
             </div>
           )}
 
-          {fixtures.length > 0 && <FixtureList fixtures={fixtures} />}
+          {fixtures.length > 0 && (
+            <FixtureList fixtures={fixtures} sport={SPORT_ORDER[0]} />
+          )}
 
           <InsiderPanel />
         </aside>
@@ -120,10 +131,37 @@ export default async function HomePage() {
         </section>
       )}
 
+      {/* Sport sections: the site's top-level structure, so it gets a block of
+          its own rather than living only in the masthead. */}
+      <section className="mt-16 grid gap-6 sm:grid-cols-2">
+        {SPORT_ORDER.filter((sport) => posts.some((p) => p.sport === sport)).map((sport) => {
+          const meta = SPORT_META[sport];
+          const count = posts.filter((p) => p.sport === sport).length;
+          return (
+            <Link
+              key={sport}
+              href={sportHref(sport)}
+              className="group border border-rule bg-card p-6 transition-colors hover:border-vermillion"
+            >
+              <p className="label text-vermillion">{meta.competition}</p>
+              <h2 className="headline mt-2 text-2xl group-hover:text-vermillion">
+                {meta.label}
+              </h2>
+              <p className="mt-3 text-[0.9375rem] leading-relaxed text-muted">
+                {meta.blurb}
+              </p>
+              <p className="label-sm mt-4 text-muted">
+                {count} {count === 1 ? "dispatch" : "dispatches"} →
+              </p>
+            </Link>
+          );
+        })}
+      </section>
+
       {/* Explore */}
       {tags.length > 0 && (
         <section className="mt-16 border-y border-rule py-10 text-center">
-          <h2 className="label text-muted">Explore by team &amp; topic</h2>
+          <h2 className="label text-muted">Explore by topic</h2>
           <ul className="mt-5 flex flex-wrap justify-center gap-2.5">
             {tags.slice(0, 10).map((tag) => (
               <li key={tag}>

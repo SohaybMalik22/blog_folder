@@ -3,6 +3,14 @@ import { Schema, model, models, type Model } from "mongoose";
 const PostSchema = new Schema(
   {
     matchRef: { type: Schema.Types.ObjectId, ref: "RawMatch", required: true },
+    // Denormalised from the source event: every listing filters by sport, and
+    // joining raw_matches for that on each query isn't worth it.
+    sport: {
+      type: String,
+      enum: ["cricket", "motorsport"],
+      required: true,
+      default: "cricket",
+    },
     title: { type: String, required: true },
     slug: { type: String, required: true, unique: true },
     metaDescription: { type: String, required: true },
@@ -28,6 +36,7 @@ const PostSchema = new Schema(
 );
 
 PostSchema.index({ status: 1, publishedAt: -1 });
+PostSchema.index({ sport: 1, status: 1, publishedAt: -1 });
 
 export const PostModel: Model<any> =
   (models.Post as Model<any>) || model("Post", PostSchema);

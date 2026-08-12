@@ -14,7 +14,7 @@ export function InsiderPanel() {
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const subject = encodeURIComponent("Add me to Cricket Beat dispatches");
+    const subject = encodeURIComponent("Add me to Sporting Beat dispatches");
     const body = encodeURIComponent(`Please add ${email} to the dispatch list.`);
     window.location.href = `mailto:${DESK_EMAIL}?subject=${subject}&body=${body}`;
   }
@@ -22,7 +22,7 @@ export function InsiderPanel() {
   return (
     <div className="bg-forest p-6 text-paper">
       <h2 className="font-display text-lg font-bold uppercase leading-tight tracking-[0.1em]">
-        Cricket Beat
+        Sporting Beat
         <span className="block text-vermillion">Insider</span>
       </h2>
       <p className="mt-3 text-sm leading-relaxed text-paper/70">
