@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { ContactForm } from "./contact-form";
+import { AnalyticsBeacon } from "../components/analytics-beacon";
 import { DESK_EMAIL } from "../components/insider-panel";
 
 export const metadata: Metadata = {
@@ -11,6 +12,8 @@ export const metadata: Metadata = {
 export default function ContactPage() {
   return (
     <main className="mx-auto max-w-2xl px-4 py-14 text-center sm:px-6">
+      <AnalyticsBeacon />
+
       <p className="label text-vermillion">Contact</p>
       <h1 className="headline mt-4 text-4xl sm:text-5xl">Get in touch</h1>
       <p className="mx-auto mt-5 max-w-lg text-[1.0625rem] leading-relaxed text-muted">

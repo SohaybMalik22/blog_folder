@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { getPublishedPosts, getTagIndex, postHasTag, withFixtures } from "@/lib/posts";
 import { SITE_NAME, SPORT_META, SPORT_ORDER, sportFromSlug } from "@/lib/site";
+import { AnalyticsBeacon } from "../components/analytics-beacon";
 import { PostCard } from "../components/post-card";
 
 export const revalidate = 3600;
@@ -71,6 +72,8 @@ export default async function AllPostsPage({
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
+      <AnalyticsBeacon sport={sport} />
+
       <div className="section-head">
         <h1 className="headline text-3xl sm:text-4xl">All dispatches</h1>
         <span className="label-sm text-muted">

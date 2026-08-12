@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { getRecentPosts, getStats, getTopTags } from "@/lib/queries";
+import { getTrafficSummary } from "@/lib/analytics";
 import { statusClass, timeAgo } from "@/lib/format";
 import { AUTO_PUBLISH_THRESHOLD } from "@/lib/publish";
+import { StatTile } from "../analytics/charts";
 
 export const dynamic = "force-dynamic";
 
@@ -38,16 +40,54 @@ function StatCard({
 }
 
 export default async function DashboardPage() {
-  const [stats, recent, topTags] = await Promise.all([
+  const [stats, recent, topTags, traffic] = await Promise.all([
     getStats(),
     getRecentPosts(5),
     getTopTags(5),
+    getTrafficSummary(7),
   ]);
 
   const maxTagCount = topTags[0]?.count ?? 1;
 
   return (
     <div className="space-y-6">
+      {/* Traffic leads the dashboard: "is anyone reading this?" is the first
+          question, and the pipeline counts below are the second. */}
+      <section>
+        <div className="mb-3 flex items-baseline justify-between gap-3">
+          <h2 className="eyebrow">Traffic · last 7 days</h2>
+          <Link href="/analytics" className="text-[0.75rem] font-semibold text-brand hover:underline">
+            Full report →
+          </Link>
+        </div>
+        {traffic.everRecorded ? (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <StatTile label="Pageviews" value={traffic.views} previous={traffic.previousViews} />
+            <StatTile
+              label="Unique visitors"
+              value={traffic.visitors}
+              previous={traffic.previousVisitors}
+            />
+            <StatTile
+              label="Views per visitor"
+              value={Math.round(traffic.viewsPerVisitor * 10) / 10}
+              note="Above 1 means multi-page reads"
+            />
+            <StatCard label="Published" value={stats.published} tone="ok" />
+          </div>
+        ) : (
+          <div className="card px-4 py-6 text-center">
+            <p className="text-[0.8125rem] font-semibold text-ink">No pageviews recorded yet</p>
+            <p className="mt-1 text-ink-soft">
+              Open a page on the blog and it will appear here.{" "}
+              <Link href="/analytics" className="font-semibold text-brand hover:underline">
+                Details
+              </Link>
+            </p>
+          </div>
+        )}
+      </section>
+
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Total dispatches" value={stats.total} />
         <StatCard label="Published" value={stats.published} tone="ok" />

@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getPublishedPosts, getSeasonFixtures, getTagIndex, withFixtures } from "@/lib/posts";
 import { SPORT_META, SPORT_ORDER, sportFromSlug } from "@/lib/site";
+import { AnalyticsBeacon } from "../../components/analytics-beacon";
 import { PostCard } from "../../components/post-card";
 import { FixtureList } from "../../components/fixture-list";
 
@@ -49,6 +50,8 @@ export default async function SportPage({
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
+      <AnalyticsBeacon sport={sport} />
+
       <header className="border-b border-rule pb-8">
         <p className="label text-vermillion">{meta.competition}</p>
         <h1 className="headline mt-3 text-3xl sm:text-4xl md:text-[2.75rem]">{meta.label}</h1>

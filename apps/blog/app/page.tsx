@@ -9,6 +9,7 @@ import {
 } from "@/lib/posts";
 import { BYLINE, categoryOf, formatDateline, readTime } from "@/lib/format";
 import { SPORT_META, SPORT_ORDER, sportHref } from "@/lib/site";
+import { AnalyticsBeacon } from "./components/analytics-beacon";
 import { PostCard } from "./components/post-card";
 import { InsiderPanel } from "./components/insider-panel";
 import { FixtureList } from "./components/fixture-list";
@@ -50,6 +51,8 @@ export default async function HomePage() {
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
+      <AnalyticsBeacon />
+
       {/* Lead + sidebar */}
       <section className="grid gap-10 lg:grid-cols-[1.85fr_1fr]">
         <article className="group">

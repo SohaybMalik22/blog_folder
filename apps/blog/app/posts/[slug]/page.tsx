@@ -11,6 +11,7 @@ import {
 import { renderMarkdown } from "@/lib/markdown";
 import { BYLINE, categoryOf, formatDateline, readTime } from "@/lib/format";
 import { SITE_NAME, SPORT_META, sportHref } from "@/lib/site";
+import { AnalyticsBeacon } from "../../components/analytics-beacon";
 import { EventFile } from "../../components/event-file";
 import { PostCard } from "../../components/post-card";
 
@@ -115,6 +116,9 @@ export default async function PostPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      {/* Slug and sport are passed explicitly so the admin's top-posts and
+          per-sport traffic don't depend on parsing the URL. */}
+      <AnalyticsBeacon postSlug={post.slug} sport={post.sport} />
 
       <article className="mx-auto max-w-2xl">
         <header className="text-center">
