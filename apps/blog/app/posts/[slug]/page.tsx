@@ -10,7 +10,7 @@ import {
 } from "@/lib/posts";
 import { renderMarkdown } from "@/lib/markdown";
 import { BYLINE, categoryOf, formatDateline, readTime } from "@/lib/format";
-import { SITE_NAME, SPORT_META, sportHref } from "@/lib/site";
+import { SITE_NAME, SPORT_META, sportHref, siteUrl } from "@/lib/site";
 import { AnalyticsBeacon } from "../../components/analytics-beacon";
 import { EventFile } from "../../components/event-file";
 import { PostCard } from "../../components/post-card";
@@ -94,7 +94,7 @@ export default async function PostPage({
       ...others.filter((p) => p.sport !== post.sport),
     ].slice(0, 3)
   );
-  const shareUrl = `${process.env.BLOG_BASE_URL ?? "http://localhost:3000"}/posts/${post.slug}`;
+  const shareUrl = `${siteUrl()}/posts/${post.slug}`;
 
   const jsonLd = {
     "@context": "https://schema.org",

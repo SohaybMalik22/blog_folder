@@ -1,9 +1,9 @@
 import type { MetadataRoute } from "next";
 import { getPublishedPosts } from "@/lib/posts";
-import { SPORT_META, SPORT_ORDER } from "@/lib/site";
+import { SPORT_META, SPORT_ORDER, siteUrl } from "@/lib/site";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = process.env.BLOG_BASE_URL ?? "http://localhost:3000";
+  const base = siteUrl();
   const posts = await getPublishedPosts();
 
   // A sport section with nothing published is a thin page; leaving it out of the

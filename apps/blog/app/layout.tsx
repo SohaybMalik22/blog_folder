@@ -3,7 +3,7 @@ import { Playfair_Display, Source_Serif_4, Inter } from "next/font/google";
 import { SiteHeader } from "./components/site-header";
 import { SiteFooter } from "./components/site-footer";
 import { getSportCounts, getTagIndex } from "@/lib/posts";
-import { SITE_NAME, SITE_TAGLINE } from "@/lib/site";
+import { SITE_NAME, SITE_TAGLINE, siteUrl } from "@/lib/site";
 import "./globals.css";
 
 const playfair = Playfair_Display({
@@ -23,7 +23,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.BLOG_BASE_URL ?? "http://localhost:3000"),
+  metadataBase: new URL(siteUrl()),
   title: {
     default: `${SITE_NAME} — Formula 1 and cricket analysis`,
     template: `%s | ${SITE_NAME}`,

@@ -5,6 +5,31 @@ import type { Sport } from "@cricket-blog/types";
  * JSON-LD publisher all read from here, so renaming the publication is a
  * single-line change rather than a grep across components.
  */
+/**
+ * Absolute origin the site is served from — the base every canonical, OG URL
+ * and sitemap entry is built on.
+ *
+ * Resolution order matters. `BLOG_BASE_URL` wins so a custom domain can be
+ * pinned. Failing that, Vercel injects the project's *production* host, which
+ * is what keeps preview deployments from advertising their own throwaway URL as
+ * canonical. Localhost is the dev fallback only.
+ *
+ * This is not cosmetic: a canonical or sitemap entry pointing at localhost is a
+ * URL Google cannot fetch, and it drops the page rather than indexing it. That
+ * is exactly what shipped before this helper existed, so resolve the base HERE
+ * and nowhere else — an inline `process.env.BLOG_BASE_URL ?? "http://localhost:3000"`
+ * is the bug, not the pattern.
+ */
+export function siteUrl(): string {
+  const configured = process.env.BLOG_BASE_URL;
+  if (configured) return configured.replace(/\/$/, "");
+
+  const vercelHost = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  if (vercelHost) return `https://${vercelHost}`;
+
+  return "http://localhost:3000";
+}
+
 export const SITE_NAME = "Sporting Beat";
 
 export const SITE_TAGLINE =

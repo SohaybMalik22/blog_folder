@@ -1,7 +1,8 @@
 import type { MetadataRoute } from "next";
+import { siteUrl } from "@/lib/site";
 
 export default function robots(): MetadataRoute.Robots {
-  const base = process.env.BLOG_BASE_URL ?? "http://localhost:3000";
+  const base = siteUrl();
   return {
     rules: { userAgent: "*", allow: "/" },
     sitemap: `${base}/sitemap.xml`,
