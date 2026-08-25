@@ -3,10 +3,10 @@ from datetime import datetime, timezone
 from src.db import backfill_missing_sport, save_raw_match
 from src.fetcher import ScrapeBlocked
 from src.items import InvalidMatch, validate_match
-from src.sources import allt20_fixtures, f1_races
+from src.sources import allt20_fixtures, cpl_matches, f1_races
 from src.trigger import trigger_content_generation
 
-SOURCES = [allt20_fixtures, f1_races]  # add more scraper adapters here as they're built
+SOURCES = [allt20_fixtures, cpl_matches, f1_races]  # add more scraper adapters here as they're built
 
 
 def run() -> None:
@@ -51,12 +51,15 @@ def run() -> None:
 def _describe(match: dict) -> str:
     """Short per-record summary — mainly so a run makes it obvious whether
     results were captured or only a fixture."""
+    scorecard = match.get("scorecard") or {}
     standings = len(match.get("standings", []))
     performances = len(match.get("playerPerformances", []))
     if standings:
         return f"{standings} classified finishers"
     if performances:
         return f"{performances} player performances"
+    if scorecard.get("result"):
+        return f"result: {scorecard['result']}"
     return f"fixture only, {len(match.get('sourceImages', []))} image urls"
 
     if saved > 0:

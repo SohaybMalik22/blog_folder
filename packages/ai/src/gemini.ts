@@ -57,7 +57,7 @@ const SPORT_BRIEFS: Record<
     previewFocus:
       "the two teams, the venue's typical conditions, and what will decide the contest",
     reportFocus:
-      "how the innings shaped the result, which individual performances swung it, and what it means for the table",
+      "how the two innings totals shaped the result, what the margin says about each side, and what it means for the tournament — naming individual players only if the facts below name them, since some sources supply team totals without a per-player scorecard",
     tagHint: "team names, the format, the tournament name",
   },
   motorsport: {

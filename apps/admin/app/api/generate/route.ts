@@ -12,8 +12,14 @@ const DELAY_BETWEEN_MATCHES_MS = 4000;
 // Events that have actually been contested carry real results, so they yield
 // reports rather than speculative previews. On a rate-limited free tier the
 // batch is the scarce resource, so spend it on those first.
+// Kept in step with `hasResults` in @cricket-blog/types — a source whose
+// results live only in `scorecard` (CPL team totals) is contested too.
 const CONTESTED = {
-  $or: [{ "standings.0": { $exists: true } }, { "playerPerformances.0": { $exists: true } }],
+  $or: [
+    { "standings.0": { $exists: true } },
+    { "playerPerformances.0": { $exists: true } },
+    { "scorecard.status": "completed" },
+  ],
 };
 
 // A preview written months out says nothing a reader can use and nothing Google

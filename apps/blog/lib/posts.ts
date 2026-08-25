@@ -118,7 +118,10 @@ function toFixture(raw: any): Fixture {
     location: scorecard.locality || scorecard.circuitName || raw.venue || "",
     date: typeof raw.date === "string" ? raw.date : "",
     localTime: scorecard.localTime ?? "",
-    contested: standings.length > 0 || (raw.playerPerformances ?? []).length > 0,
+    contested:
+      standings.length > 0 ||
+      (raw.playerPerformances ?? []).length > 0 ||
+      scorecard.status === "completed",
     winner: standings[0]?.name ?? scorecard.winner ?? "",
   };
 }

@@ -79,9 +79,21 @@ export interface RawMatch {
   status: RawMatchStatus;
 }
 
-/** True once the event has been contested and real results exist. */
-export function hasResults(match: Pick<RawMatch, "playerPerformances" | "standings">): boolean {
-  return (match.playerPerformances?.length ?? 0) > 0 || (match.standings?.length ?? 0) > 0;
+/**
+ * True once the event has been contested and real results exist.
+ *
+ * Per-player scorecards and a finishing order are the richest evidence, but a
+ * head-to-head result can be complete without either: a CPL match record is
+ * two team totals plus a result line, which lives in `scorecard`. Sources that
+ * carry results MUST set `scorecard.status` to "completed", or a played match
+ * silently gets written up as a preview.
+ */
+export function hasResults(
+  match: Pick<RawMatch, "playerPerformances" | "standings"> & Partial<Pick<RawMatch, "scorecard">>
+): boolean {
+  if ((match.playerPerformances?.length ?? 0) > 0) return true;
+  if ((match.standings?.length ?? 0) > 0) return true;
+  return match.scorecard?.status === "completed";
 }
 
 export type PostStatus = "pending" | "published" | "rejected";

@@ -4,6 +4,18 @@ import { SPORT_META } from "@/lib/site";
 /** How much of a 20-car classification is worth printing inline. */
 const CLASSIFICATION_ROWS = 5;
 
+interface Innings {
+  team: string;
+  runs: number;
+  wickets?: number;
+}
+
+/** "171/4", or plain "171" when the side was not bowled out and the source
+ *  didn't record wickets. */
+function scoreOf(innings: Innings): string {
+  return innings.wickets === undefined ? String(innings.runs) : `${innings.runs}/${innings.wickets}`;
+}
+
 /**
  * The article page's anchor block: the event record the piece was generated
  * from, shown so the reader can check the prose against the data rather than
@@ -15,6 +27,15 @@ export function EventFile({ match }: { match: RawMatch }) {
   const meta = SPORT_META[sport];
   const round = match.matchTitle.match(/(?:match|round)\s+(\d+)/i)?.[1];
   const standings = match.standings ?? [];
+  const scorecard = (match.scorecard ?? {}) as Record<string, unknown>;
+  const innings = (scorecard.innings as Innings[] | undefined) ?? [];
+  const result = typeof scorecard.result === "string" ? scorecard.result : "";
+  // Sources that carry their own licence credit (the CPL feed) override the
+  // per-sport one, so a sport covered by two sources credits each correctly.
+  const credit =
+    typeof scorecard.attribution === "string" && typeof scorecard.referenceUrl === "string"
+      ? { label: scorecard.attribution, href: scorecard.referenceUrl }
+      : meta.dataCredit;
 
   const rows = [
     match.teams.length === 2
@@ -57,6 +78,23 @@ export function EventFile({ match }: { match: RawMatch }) {
         ))}
       </dl>
 
+      {innings.length === 2 && (
+        <div className="mx-auto mt-8 max-w-md text-left">
+          <p className="label-sm border-b border-rule pb-2 text-muted">Scoreline</p>
+          <ol className="divide-y divide-rule">
+            {innings.map((entry) => (
+              <li key={entry.team} className="flex items-baseline gap-3 py-2">
+                <span className="min-w-0 flex-1 text-[0.9375rem] leading-snug">{entry.team}</span>
+                <span className="font-display shrink-0 text-sm font-bold text-vermillion">
+                  {scoreOf(entry)}
+                </span>
+              </li>
+            ))}
+          </ol>
+          {result && <p className="label-sm mt-3 text-muted">{result}</p>}
+        </div>
+      )}
+
       {standings.length > 0 && (
         <div className="mx-auto mt-8 max-w-md text-left">
           <p className="label-sm border-b border-rule pb-2 text-muted">
@@ -91,15 +129,15 @@ export function EventFile({ match }: { match: RawMatch }) {
         </p>
       )}
 
-      {meta.dataCredit && (
+      {credit && (
         <p className="label-sm mt-6 text-muted">
           <a
-            href={meta.dataCredit.href}
+            href={credit.href}
             target="_blank"
             rel="noopener noreferrer"
             className="underline decoration-rule underline-offset-2 hover:text-ink"
           >
-            {meta.dataCredit.label}
+            {credit.label}
           </a>
         </p>
       )}

@@ -29,11 +29,15 @@ export const SPORT_META: Record<Sport, SportMeta> = {
   cricket: {
     slug: "cricket",
     label: "Cricket",
-    competition: "Asian Legends League · Season 2",
+    competition: "Caribbean Premier League · 2026",
     blurb:
-      "Fixture-by-fixture coverage of the Asian Legends League, written from the published schedule and scorecards.",
+      "Match-by-match coverage of the Caribbean Premier League, written from the published scorecards — plus the Asian Legends League schedule.",
     eventNoun: "match",
     scheduleLabel: "Season fixtures",
+    dataCredit: {
+      label: "Caribbean Premier League data via TheSportsDB",
+      href: "https://www.thesportsdb.com/league/5176",
+    },
   },
   motorsport: {
     slug: "formula-1",
